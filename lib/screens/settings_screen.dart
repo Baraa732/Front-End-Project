@@ -50,16 +50,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _buildSectionTitle('About'),
                     _buildInfoTile('App Version', '1.0.0', Icons.info),
                     _buildInfoTile('Build Number', '1', Icons.build),
-                    FutureBuilder<bool>(
-                      future: ConnectionManager.isConnected(),
-                      builder: (context, snapshot) {
-                        final isConnected = snapshot.data ?? false;
-                        return _buildInfoTile(
-                          'Connection Status',
-                          isConnected ? 'Connected' : 'Disconnected',
-                          isConnected ? Icons.cloud_done : Icons.cloud_off,
-                        );
-                      },
+                    _buildInfoTile(
+                      'Connection Status',
+                      ConnectionManager.currentUrl != null ? 'Connected' : 'Disconnected',
+                      ConnectionManager.currentUrl != null ? Icons.cloud_done : Icons.cloud_off,
                     ),
                     const SizedBox(height: 24),
                     _buildActionButton(
@@ -73,23 +67,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             backgroundColor: Color(0xFFff6f2d),
                           ),
                         );
-                        try {
-                          await ConnectionManager.resetConnection();
-                          setState(() {});
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Connected to AUTOHIVE backend successfully'),
-                              backgroundColor: Color(0xFF10B981),
-                            ),
-                          );
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Cannot connect to backend. Please check server status.'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
+                        ConnectionManager.resetConnection();
+                        await ConnectionManager.getWorkingUrl();
+                        setState(() {});
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Connection test completed'),
+                            backgroundColor: Color(0xFF10B981),
+                          ),
+                        );
                       },
                     ),
                   ],

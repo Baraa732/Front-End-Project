@@ -47,34 +47,26 @@ class ProfileAvatar extends StatelessWidget {
   }
 
   Widget _buildProfileImage() {
-    final profileImageUrl = user?['profile_image'];
+    final profileImageUrl = user?['profile_image_url'];
     
     if (profileImageUrl != null && profileImageUrl.isNotEmpty) {
-      return FutureBuilder<String>(
-        future: AppConfig.getImageUrl(profileImageUrl),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            return CachedNetworkImage(
-              imageUrl: snapshot.data!,
-              fit: BoxFit.cover,
-              placeholder: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFFff6f2d), Color(0xFF4a90e2)],
-                  ),
-                ),
-                child: Center(
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
-                ),
-              ),
-              errorWidget: _buildDefaultAvatar(),
-            );
-          }
-          return _buildDefaultAvatar();
-        },
+      return CachedNetworkImage(
+        imageUrl: profileImageUrl,
+        fit: BoxFit.cover,
+        placeholder: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFFff6f2d), Color(0xFF4a90e2)],
+            ),
+          ),
+          child: Center(
+            child: CircularProgressIndicator(
+              color: Colors.white,
+              strokeWidth: 2,
+            ),
+          ),
+        ),
+        errorWidget: _buildDefaultAvatar(),
       );
     }
     

@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import '../services/image_cache_service.dart';
 
@@ -28,7 +28,7 @@ class CachedNetworkImage extends StatefulWidget {
 
 class _CachedNetworkImageState extends State<CachedNetworkImage> {
   final ImageCacheService _cacheService = ImageCacheService();
-  File? _cachedFile;
+  Uint8List? _cachedBytes;
   bool _isLoading = true;
   bool _hasError = false;
 
@@ -52,17 +52,17 @@ class _CachedNetworkImageState extends State<CachedNetworkImage> {
     setState(() {
       _isLoading = true;
       _hasError = false;
-      _cachedFile = null;
+      _cachedBytes = null;
     });
 
     try {
       // Check if image is already cached
-      File? cachedFile = await _cacheService.getCachedImage(widget.imageUrl);
+      Uint8List? cachedBytes = _cacheService.getCachedImage(widget.imageUrl);
       
-      if (cachedFile != null) {
+      if (cachedBytes != null) {
         if (mounted) {
           setState(() {
-            _cachedFile = cachedFile;
+            _cachedBytes = cachedBytes;
             _isLoading = false;
           });
         }
@@ -70,12 +70,13 @@ class _CachedNetworkImageState extends State<CachedNetworkImage> {
       }
 
       // Download and cache the image
-      cachedFile = await _cacheService.cacheImage(widget.imageUrl);
+      await _cacheService.cacheImage(widget.imageUrl);
+      cachedBytes = _cacheService.getCachedImage(widget.imageUrl);
       
       if (mounted) {
-        if (cachedFile != null) {
+        if (cachedBytes != null) {
           setState(() {
-            _cachedFile = cachedFile;
+            _cachedBytes = cachedBytes;
             _isLoading = false;
           });
         } else {
@@ -86,7 +87,6 @@ class _CachedNetworkImageState extends State<CachedNetworkImage> {
         }
       }
     } catch (e) {
-      print('Error loading image: $e');
       if (mounted) {
         setState(() {
           _hasError = true;
@@ -97,9 +97,9 @@ class _CachedNetworkImageState extends State<CachedNetworkImage> {
   }
 
   Widget _buildImage() {
-    if (_cachedFile != null) {
-      return Image.file(
-        _cachedFile!,
+    if (_cachedBytes != null) {
+      return Image.memory(
+        _cachedBytes!,
         width: widget.width,
         height: widget.height,
         fit: widget.fit,

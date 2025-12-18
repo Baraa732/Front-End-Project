@@ -54,8 +54,7 @@ class ApiService {
       final apiUrl = await AppConfig.baseUrl;
       final response = await http.get(Uri.parse('$apiUrl/apartments/$id/public'), headers: headers).timeout(const Duration(seconds: 30));
       final data = json.decode(response.body);
-      
-      // Cache apartment images
+
       if (data['success'] == true && data['data'] != null && data['data']['images'] != null) {
         for (String imageUrl in List<String>.from(data['data']['images'])) {
           AppConfig.getImageUrl(imageUrl).then((fullUrl) => 
@@ -143,8 +142,7 @@ class ApiService {
       final apiUrl = await AppConfig.baseUrl;
       final response = await http.get(Uri.parse('$apiUrl/my-apartments'), headers: headers).timeout(const Duration(seconds: 30));
       final data = json.decode(response.body);
-      
-      // Cache apartment images
+
       if (data['success'] == true && data['data'] != null) {
         final apartments = data['data'] is List ? data['data'] : data['data']['data'];
         if (apartments is List) {
@@ -179,8 +177,7 @@ class ApiService {
       var request = http.MultipartRequest('POST', Uri.parse('$apiUrl/apartments'));
       final headers = await _getHeaders();
       request.headers.addAll(headers);
-      
-      // Add form fields
+
       apartmentData.forEach((key, value) {
         if (value != null) {
           if (value is List) {
@@ -192,8 +189,7 @@ class ApiService {
           }
         }
       });
-      
-      // Add image files
+
       for (int i = 0; i < images.length; i++) {
         final file = await http.MultipartFile.fromPath(
           'images[$i]',

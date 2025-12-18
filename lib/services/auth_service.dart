@@ -2,35 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
 import 'package:http/http.dart' as http;
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'error_handler.dart';
 import '../config/app_config.dart';
 
 class AuthService {
-  final storage = const FlutterSecureStorage();
-  
-  Future<bool> _hasInternetConnection() async {
-    try {
-      final connectivityResult = await Connectivity().checkConnectivity();
-      if (connectivityResult == ConnectivityResult.none) {
-        return false;
-      }
-      
-      final url = await AppConfig.baseUrl;
-      final response = await http.get(
-        Uri.parse('$url/health'),
-        headers: {'Accept': 'application/json'},
-      ).timeout(const Duration(seconds: 5));
-      
-      return response.statusCode == 200;
-    } catch (e) {
-      return false;
-    }
-  }
-
-
-
   Future<Map<String, dynamic>> register(
     String firstName,
     String lastName,
@@ -44,17 +20,12 @@ class AuthService {
     File? idImage,
   }) async {
     try {
-      if (!await _hasInternetConnection()) {
-        return {
-          'success': false,
-          'message': 'No internet connection. Please check your network and try again.'
-        };
-      }
       final url = await AppConfig.baseUrl;
-      var request = http.MultipartRequest('POST', Uri.parse('$url/register'));
       
+      var request = http.MultipartRequest('POST', Uri.parse('$url/register'));
       request.headers['Accept'] = 'application/json';
       
+      // Add form fields
       request.fields['first_name'] = firstName;
       request.fields['last_name'] = lastName;
       request.fields['phone'] = phone;
@@ -63,12 +34,12 @@ class AuthService {
       request.fields['role'] = role;
       request.fields['city'] = city;
       request.fields['governorate'] = governorate;
+      
       if (birthDate != null) {
         request.fields['birth_date'] = '${birthDate.year}-${birthDate.month.toString().padLeft(2, '0')}-${birthDate.day.toString().padLeft(2, '0')}';
       }
       
-      print('📦 Request fields: ${request.fields}');
-      
+      // Add image files
       if (profileImage != null) {
         request.files.add(
           await http.MultipartFile.fromPath(
@@ -87,59 +58,56 @@ class AuthService {
         );
       }
       
-      print('🚀 Sending registration request...');
-      final streamedResponse = await request.send().timeout(const Duration(seconds: 30));
+      final streamedResponse = await request.send().timeout(const Duration(seconds: 60));
       final responseBody = await streamedResponse.stream.bytesToString();
       
-      print('📊 Response status: ${streamedResponse.statusCode}');
-      print('📝 Response body: $responseBody');
-      
-      final data = json.decode(responseBody);
+      Map<String, dynamic> data;
+      try {
+        data = json.decode(responseBody);
+      } catch (e) {
+        return {
+          'success': false,
+          'message': 'Server connection failed. Make sure your AUTOHIVE backend is running on http://10.0.2.2:8000',
+        };
+      }
 
       if (streamedResponse.statusCode == 201 || streamedResponse.statusCode == 200) {
-        if (data['success'] == true && data['data'] != null) {
-          final token = data['data']['token'];
-          final user = data['data']['user'];
-
-          await storage.write(key: 'token', value: token);
-          await storage.write(key: 'user', value: json.encode(user));
-
-          return {
-            'success': true,
-            'user': user,
-            'token': token,
-            'message': data['message'] ?? 'Registration successful'
-          };
-        }
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Registration successful',
+          'data': data
+        };
       }
       
+      // Handle specific error cases
       String errorMessage = data['message'] ?? 'Registration failed';
-      if (errorMessage.contains('SQLSTATE') || errorMessage.contains('Connection refused') || errorMessage.contains('database')) {
-        errorMessage = 'Database connection failed. Please check server connection and try again later.';
+      
+      if (streamedResponse.statusCode == 422) {
+        // Validation errors
+        if (data['errors'] != null) {
+          final errors = data['errors'] as Map<String, dynamic>;
+          if (errors['phone'] != null) {
+            errorMessage = errors['phone'][0] ?? errorMessage;
+          }
+        }
       }
       
       return {
         'success': false,
         'message': errorMessage,
         'data': data,
-        'status_code': streamedResponse.statusCode,
+        'errors': data['errors'],
       };
-    } catch (e, stackTrace) {
-      ErrorHandler.logError('register', e, stackTrace);
-      return ErrorHandler.handleApiError(e, operation: 'Registration');
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Unable to connect to server. Please check your internet connection.',
+      };
     }
   }
 
-
-
   Future<Map<String, dynamic>> login(String phone, String password) async {
     try {
-      if (!await _hasInternetConnection()) {
-        return {
-          'success': false,
-          'message': 'No internet connection. Please check your network and try again.'
-        };
-      }
       final url = await AppConfig.baseUrl;
       final response = await http.post(
         Uri.parse('$url/login'),
@@ -150,7 +118,7 @@ class AuthService {
         body: json.encode({
           'phone': phone,
           'password': password,
-          'device_name': '${Platform.operatingSystem} Device'
+          'device_name': 'Android Device'
         }),
       ).timeout(const Duration(seconds: 30));
 
@@ -161,8 +129,9 @@ class AuthService {
           final token = data['data']['token'];
           final user = data['data']['user'];
 
-          await storage.write(key: 'token', value: token);
-          await storage.write(key: 'user', value: json.encode(user));
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('token', token);
+          await prefs.setString('user', json.encode(user));
 
           return {
             'success': true,
@@ -173,24 +142,32 @@ class AuthService {
         }
       }
       
-      String errorMessage = data['message'] ?? 'Invalid credentials';
-      if (errorMessage.contains('SQLSTATE') || errorMessage.contains('Connection refused') || errorMessage.contains('database')) {
-        errorMessage = 'Database connection failed. Please check server connection and try again later.';
+      // Handle specific error cases
+      String errorMessage = data['message'] ?? 'Login failed';
+      
+      if (response.statusCode == 401) {
+        errorMessage = 'Invalid phone number or password';
+      } else if (response.statusCode == 403) {
+        // Account status issues (pending, rejected, not approved)
+        errorMessage = data['message'] ?? 'Account access denied';
       }
       
       return {
         'success': false,
-        'message': errorMessage
+        'message': errorMessage,
+        'errors': data['errors'],
       };
-    } catch (e, stackTrace) {
-      ErrorHandler.logError('login', e, stackTrace);
-      return ErrorHandler.handleApiError(e, operation: 'Login');
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Connection failed. Make sure AUTOHIVE backend is running.'
+      };
     }
   }
 
   Future<Map<String, dynamic>> logout() async {
     try {
-      final token = await storage.read(key: 'token');
+      final token = await getToken();
       
       if (token != null) {
         try {
@@ -207,18 +184,21 @@ class AuthService {
         }
       }
 
-      await storage.deleteAll();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
       return {'success': true, 'message': 'Logged out successfully'};
     } catch (e, stackTrace) {
       ErrorHandler.logError('logout', e, stackTrace);
-      await storage.deleteAll();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
       return ErrorHandler.handleApiError(e, operation: 'Logout');
     }
   }
 
   Future<String?> getToken() async {
     try {
-      return await storage.read(key: 'token');
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('token');
     } catch (e) {
       return null;
     }
@@ -226,7 +206,8 @@ class AuthService {
 
   Future<Map<String, dynamic>?> getUser() async {
     try {
-      final userStr = await storage.read(key: 'user');
+      final prefs = await SharedPreferences.getInstance();
+      final userStr = prefs.getString('user');
       if (userStr != null) {
         return json.decode(userStr);
       }
@@ -236,7 +217,10 @@ class AuthService {
     }
   }
 
-
+  String? getProfileImageUrl(Map<String, dynamic>? user) {
+    if (user == null) return null;
+    return user['profile_image_url'] as String?;
+  }
 
   Future<Map<String, dynamic>> updateProfile({
     required String firstName,
@@ -272,7 +256,8 @@ class AuthService {
       
       if (streamedResponse.statusCode == 200) {
         if (data['data'] != null && data['data']['user'] != null) {
-          await storage.write(key: 'user', value: json.encode(data['data']['user']));
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('user', json.encode(data['data']['user']));
         }
         
         return {
@@ -332,6 +317,4 @@ class AuthService {
       return ErrorHandler.handleApiError(e, operation: 'Password change');
     }
   }
-
-
 }

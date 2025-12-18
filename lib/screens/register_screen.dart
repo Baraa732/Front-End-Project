@@ -967,13 +967,21 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
         setState(() {
           if (isProfile) {
             _profileImage = File(image.path);
+            print('📷 Profile image selected: ${image.path}');
           } else {
             _idImage = File(image.path);
+            print('🆔 ID image selected: ${image.path}');
           }
         });
       }
     } catch (e) {
-      ErrorHandler.showError(context, e, customMessage: 'Failed to pick image. Please try again.');
+      print('❌ Image picker error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to pick image: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

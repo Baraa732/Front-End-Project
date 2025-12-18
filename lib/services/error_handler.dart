@@ -76,7 +76,7 @@ class ErrorHandler {
                 label: 'Retry',
                 textColor: Colors.white,
                 onPressed: () {
-                  // Retry logic can be implemented here
+                  //TODO : Retry logic
                 },
               )
             : null,
@@ -166,7 +166,6 @@ class ErrorHandler {
       );
     }
 
-    // Handle HTTP response errors
     if (error is http.Response) {
       return _parseHttpResponse(error);
     }
