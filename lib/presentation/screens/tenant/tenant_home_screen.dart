@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/core.dart';
+import '../../../core/state/state.dart';
 import '../../../data/data.dart';
-import '../../theme_provider.dart';
 import '../../widgets/common/theme_toggle_button.dart';
 import '../shared/tenant_apartment_details_screen.dart';
 import '../shared/landlord_profile_screen.dart';
+import '../shared/chats_list_screen.dart';
 
-class TenantHomeScreen extends StatefulWidget {
+class TenantHomeScreen extends ConsumerStatefulWidget {
   const TenantHomeScreen({super.key});
 
   @override
-  State<TenantHomeScreen> createState() => _TenantHomeScreenState();
+  ConsumerState<TenantHomeScreen> createState() => _TenantHomeScreenState();
 }
 
-class _TenantHomeScreenState extends State<TenantHomeScreen> with TickerProviderStateMixin, RealTimeRefreshMixin {
+class _TenantHomeScreenState extends ConsumerState<TenantHomeScreen> with TickerProviderStateMixin {
   final ApiService _apiService = ApiService();
   final AuthService _authService = AuthService();
   final TextEditingController _searchController = TextEditingController();
@@ -103,29 +104,26 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> with TickerProvider
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return Scaffold(
-          body: Container(
-            decoration: BoxDecoration(
-              gradient: AppTheme.getBackgroundGradient(themeProvider.isDarkMode),
+    final isDarkMode = ref.watch(themeProvider);
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: AppTheme.getBackgroundGradient(isDarkMode),
+        ),
+        child: Stack(
+          children: [
+            _buildAnimatedBackground(isDarkMode),
+            SafeArea(
+              child: Column(
+                children: [
+                  _buildHeader(isDarkMode),
+                  Expanded(child: _buildApartmentsList()),
+                ],
+              ),
             ),
-            child: Stack(
-              children: [
-                _buildAnimatedBackground(themeProvider.isDarkMode),
-                SafeArea(
-                  child: Column(
-                    children: [
-                      _buildHeader(themeProvider.isDarkMode),
-                      Expanded(child: _buildApartmentsList()),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 
@@ -143,13 +141,13 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> with TickerProvider
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [Color(0xFFff6f2d), Color(0xFF4a90e2)]),
-                  borderRadius: BorderRadius.circular(20),
+              IconButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ChatsListScreen()),
                 ),
-                child: const Text('TENANT', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
+                icon: const Icon(Icons.chat_bubble_outline, color: Color(0xFFff6f2d)),
+                tooltip: 'Messages',
               ),
               const Spacer(),
               Text(
@@ -237,12 +235,13 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> with TickerProvider
   }
 
   Widget _buildApartmentCard(Apartment apartment) {
+    final isDarkMode = ref.watch(themeProvider);
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context.watch<ThemeProvider>().isDarkMode),
+        color: AppTheme.getCardColor(isDarkMode),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.getBorderColor(context.watch<ThemeProvider>().isDarkMode)),
+        border: Border.all(color: AppTheme.getBorderColor(isDarkMode)),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 4))],
       ),
       child: Column(
@@ -259,7 +258,7 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> with TickerProvider
                     Expanded(
                       child: Text(
                         apartment.title,
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.getTextColor(context.watch<ThemeProvider>().isDarkMode)),
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.getTextColor(isDarkMode)),
                       ),
                     ),
                     _buildStatusBadge(apartment.isAvailable),
@@ -270,17 +269,17 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> with TickerProvider
                   children: [
                     const Icon(Icons.location_on, color: Color(0xFFff6f2d), size: 16),
                     const SizedBox(width: 4),
-                    Text('${apartment.city}, ${apartment.governorate}', style: TextStyle(color: AppTheme.getSubtextColor(context.watch<ThemeProvider>().isDarkMode))),
+                    Text('${apartment.city}, ${apartment.governorate}', style: TextStyle(color: AppTheme.getSubtextColor(isDarkMode))),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.bed, size: 16, color: AppTheme.getSubtextColor(context.watch<ThemeProvider>().isDarkMode)),
-                    Text(' ${apartment.bedrooms}', style: TextStyle(color: AppTheme.getSubtextColor(context.watch<ThemeProvider>().isDarkMode))),
+                    Icon(Icons.bed, size: 16, color: AppTheme.getSubtextColor(isDarkMode)),
+                    Text(' ${apartment.bedrooms}', style: TextStyle(color: AppTheme.getSubtextColor(isDarkMode))),
                     const SizedBox(width: 16),
-                    Icon(Icons.bathtub, size: 16, color: AppTheme.getSubtextColor(context.watch<ThemeProvider>().isDarkMode)),
-                    Text(' ${apartment.bathrooms}', style: TextStyle(color: AppTheme.getSubtextColor(context.watch<ThemeProvider>().isDarkMode))),
+                    Icon(Icons.bathtub, size: 16, color: AppTheme.getSubtextColor(isDarkMode)),
+                    Text(' ${apartment.bathrooms}', style: TextStyle(color: AppTheme.getSubtextColor(isDarkMode))),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -290,18 +289,18 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> with TickerProvider
                     const Spacer(),
                     if (apartment.landlord != null) _buildLandlordProfile(apartment.landlord!),
                     const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: apartment.isAvailable 
-                          ? () async {
-                              await Navigator.push(context, MaterialPageRoute(builder: (_) => TenantApartmentDetailsScreen(apartmentId: apartment.id)));
-                              _loadApartments();
-                            }
-                          : null,
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        await Navigator.push(context, MaterialPageRoute(builder: (_) => TenantApartmentDetailsScreen(apartmentId: apartment.id)));
+                        _loadApartments();
+                      },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: apartment.isAvailable ? const Color(0xFF10B981) : Colors.grey,
+                        backgroundColor: const Color(0xFF4a90e2),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       ),
-                      child: Text(apartment.isAvailable ? 'Book Now' : 'Not Available', style: const TextStyle(color: Colors.white)),
+                      icon: const Icon(Icons.visibility, color: Colors.white, size: 18),
+                      label: const Text('View Details', style: TextStyle(color: Colors.white)),
                     ),
                   ],
                 ),
@@ -423,9 +422,6 @@ class _TenantHomeScreenState extends State<TenantHomeScreen> with TickerProvider
       },
     );
   }
-
-  @override
-  void refreshData() => _loadApartments();
 
   @override
   void dispose() {

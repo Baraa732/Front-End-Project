@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/core.dart';
-import '../../theme_provider.dart';
+import '../../../core/state/state.dart';
 
-class CreateBookingScreen extends StatefulWidget {
+class CreateBookingScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic> apartment;
   
   const CreateBookingScreen({super.key, required this.apartment});
 
   @override
-  State<CreateBookingScreen> createState() => _CreateBookingScreenState();
+  ConsumerState<CreateBookingScreen> createState() => _CreateBookingScreenState();
 }
 
-class _CreateBookingScreenState extends State<CreateBookingScreen> {
+class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
   final ApiService _apiService = ApiService();
   final _formKey = GlobalKey<FormState>();
   
@@ -24,48 +24,45 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return Scaffold(
-          body: Container(
-            decoration: BoxDecoration(
-              gradient: AppTheme.getBackgroundGradient(themeProvider.isDarkMode),
-            ),
-            child: SafeArea(
-              child: Column(
-                children: [
-                  _buildHeader(),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildApartmentInfo(),
-                            const SizedBox(height: 24),
-                            _buildDateSelection(),
-                            const SizedBox(height: 24),
-                            _buildGuestSelection(),
-                            const SizedBox(height: 24),
-                            _buildMessageField(),
-                            const SizedBox(height: 24),
-                            if (_checkInDate != null && _checkOutDate != null)
-                              _buildPriceSummary(),
-                            const SizedBox(height: 32),
-                            _buildBookButton(),
-                          ],
-                        ),
-                      ),
+    final isDarkMode = ref.watch(themeProvider);
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: AppTheme.getBackgroundGradient(isDarkMode),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildApartmentInfo(),
+                        const SizedBox(height: 24),
+                        _buildDateSelection(),
+                        const SizedBox(height: 24),
+                        _buildGuestSelection(),
+                        const SizedBox(height: 24),
+                        _buildMessageField(),
+                        const SizedBox(height: 24),
+                        if (_checkInDate != null && _checkOutDate != null)
+                          _buildPriceSummary(),
+                        const SizedBox(height: 32),
+                        _buildBookButton(),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -100,17 +97,17 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            widget.apartment['title'] ?? 'Apartment',
+            widget.apartment['title']?.toString() ?? 'Apartment',
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           const SizedBox(height: 8),
           Text(
-            '${widget.apartment['city']}, ${widget.apartment['governorate']}',
+            '${widget.apartment['city']?.toString() ?? ''}, ${widget.apartment['governorate']?.toString() ?? ''}',
             style: TextStyle(color: Colors.white.withOpacity(0.7)),
           ),
           const SizedBox(height: 8),
           Text(
-            '\$${widget.apartment['price_per_night']}/night',
+            '\$${widget.apartment['price_per_night']?.toString() ?? widget.apartment['price']?.toString() ?? '0'}/night',
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFFff6f2d)),
           ),
         ],
@@ -241,8 +238,8 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
 
   Widget _buildPriceSummary() {
     final nights = _checkOutDate!.difference(_checkInDate!).inDays;
-    final pricePerNight = widget.apartment['price_per_night'] ?? 0;
-    final totalPrice = nights * pricePerNight;
+    final pricePerNight = double.tryParse(widget.apartment['price_per_night']?.toString() ?? '0') ?? 0.0;
+    final totalPrice = (nights * pricePerNight).toInt();
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -252,20 +249,35 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
         border: Border.all(color: Colors.white.withOpacity(0.2)),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('$nights night${nights > 1 ? 's' : ''}', style: const TextStyle(color: Colors.white)),
-              Text('\$${pricePerNight * nights}', style: const TextStyle(color: Colors.white)),
+              Text(
+                '\$${pricePerNight.toInt()}/night × $nights nights',
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+              ),
+              const Spacer(),
+              Text(
+                '\$$totalPrice',
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+              ),
             ],
           ),
+          const SizedBox(height: 8),
           const Divider(color: Colors.white24),
+          const SizedBox(height: 8),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Total', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-              Text('\$$totalPrice', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFFff6f2d))),
+              const Text(
+                'Total',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const Spacer(),
+              Text(
+                '\$$totalPrice',
+                style: const TextStyle(color: Color(0xFFff6f2d), fontSize: 20, fontWeight: FontWeight.bold),
+              ),
             ],
           ),
         ],
@@ -276,17 +288,17 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
   Widget _buildBookButton() {
     return SizedBox(
       width: double.infinity,
-      height: 56,
       child: ElevatedButton(
-        onPressed: _canBook() ? _submitBookingRequest : null,
+        onPressed: _canBook() ? _bookApartment : null,
         style: ElevatedButton.styleFrom(
-          backgroundColor: _canBook() ? const Color(0xFFff6f2d) : Colors.grey,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: const Color(0xFF10B981),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         child: _isLoading
             ? const CircularProgressIndicator(color: Colors.white)
             : const Text(
-                'Send Booking Request',
+                'Book Now',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
               ),
       ),
@@ -297,45 +309,63 @@ class _CreateBookingScreenState extends State<CreateBookingScreen> {
     return _checkInDate != null && _checkOutDate != null && !_isLoading;
   }
 
-  Future<void> _submitBookingRequest() async {
-    if (!_formKey.currentState!.validate() || !_canBook()) return;
+  Future<void> _bookApartment() async {
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
+      print('Creating booking request with data:');
+      print('Apartment ID: ${widget.apartment['id']}');
+      print('Check-in: ${_checkInDate!.toIso8601String()}');
+      print('Check-out: ${_checkOutDate!.toIso8601String()}');
+      print('Guests: $_guests');
+      print('Message: ${_messageController.text}');
+      
       final result = await _apiService.createBookingRequest(
-        apartmentId: widget.apartment['id'].toString(),
-        checkIn: '${_checkInDate!.year}-${_checkInDate!.month.toString().padLeft(2, '0')}-${_checkInDate!.day.toString().padLeft(2, '0')}',
-        checkOut: '${_checkOutDate!.year}-${_checkOutDate!.month.toString().padLeft(2, '0')}-${_checkOutDate!.day.toString().padLeft(2, '0')}',
+        apartmentId: widget.apartment['id']?.toString() ?? '',
+        checkIn: _checkInDate!.toIso8601String(),
+        checkOut: _checkOutDate!.toIso8601String(),
         guests: _guests,
-        message: _messageController.text.trim().isEmpty ? null : _messageController.text.trim(),
+        message: _messageController.text.isNotEmpty ? _messageController.text : null,
       );
 
-      if (result['success']) {
-        Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Booking request sent successfully!'),
-            backgroundColor: Color(0xFF10B981),
-          ),
-        );
+      print('Booking result: $result');
+
+      if (result['success'] == true) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'Booking request sent successfully!'),
+              backgroundColor: const Color(0xFF10B981),
+            ),
+          );
+          Navigator.pop(context, true);
+        }
       } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'Failed to create booking'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('Booking error: $e');
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result['message'] ?? 'Failed to send booking request'),
-            backgroundColor: const Color(0xFFEF4444),
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
           ),
         );
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: ${e.toString()}'),
-          backgroundColor: const Color(0xFFEF4444),
-        ),
-      );
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

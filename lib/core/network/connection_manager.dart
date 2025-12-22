@@ -31,7 +31,7 @@ class ConnectionManager {
   static Future<bool> _testUrl(String url) async {
     try {
       final response = await http.get(
-        Uri.parse('$url/health'),
+        Uri.parse(url),
         headers: {'Accept': 'application/json'},
       ).timeout(const Duration(seconds: 3));
       

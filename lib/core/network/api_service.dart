@@ -22,7 +22,19 @@ class ApiService {
     try {
       final headers = await _getHeaders();
       final apiUrl = await AppConfig.baseUrl;
-      final url = search != null ? '$apiUrl/apartments/public?search=$search' : '$apiUrl/apartments/public';
+      
+      // Only show available apartments to public
+      String url = '$apiUrl/apartments/public';
+      List<String> params = ['available=1']; // Filter only available apartments
+      
+      if (search != null && search.isNotEmpty) {
+        params.add('search=$search');
+      }
+      
+      if (params.isNotEmpty) {
+        url += '?${params.join('&')}';
+      }
+      
       final response = await http.get(Uri.parse(url), headers: headers).timeout(const Duration(seconds: 30));
       final data = json.decode(response.body);
       

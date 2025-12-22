@@ -1,8 +1,7 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../theme_provider.dart';
-import '../../../core/theme/app_theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/core.dart';
+import '../../../core/state/state.dart';
 import '../../../core/network/auth_service.dart';
 import '../../widgets/common/profile_avatar.dart';
 import '../auth/welcome_screen.dart';
@@ -12,14 +11,14 @@ import '../landlord/my_apartments_screen.dart';
 import '../landlord/booking_requests_screen.dart';
 import '../tenant/my_bookings_screen.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final AuthService _authService = AuthService();
   Map<String, dynamic>? _user;
   bool _isLoading = true;
@@ -59,22 +58,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return Container(
-          decoration: BoxDecoration(
-            gradient: AppTheme.getBackgroundGradient(themeProvider.isDarkMode),
+    final isDarkMode = ref.watch(themeProvider);
+    return Container(
+      decoration: BoxDecoration(
+        gradient: AppTheme.getBackgroundGradient(isDarkMode),
+      ),
+      child: Stack(
+        children: [
+          _buildAnimatedBackground(isDarkMode),
+          SafeArea(
+            child: _buildContent(isDarkMode),
           ),
-          child: Stack(
-            children: [
-              _buildAnimatedBackground(themeProvider.isDarkMode),
-              SafeArea(
-                child: _buildContent(themeProvider.isDarkMode),
-              ),
-            ],
-          ),
-        );
-      },
+        ],
+      ),
     );
   }
 
@@ -321,93 +317,87 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildThemeToggle() {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppTheme.getCardColor(themeProvider.isDarkMode),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppTheme.getBorderColor(themeProvider.isDarkMode)),
+    final isDarkMode = ref.watch(themeProvider);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardColor(isDarkMode),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppTheme.getBorderColor(isDarkMode)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [Color(0xFFff6f2d), Color(0xFF4a90e2)]),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(isDarkMode ? Icons.dark_mode : Icons.light_mode, color: Colors.white, size: 20),
           ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [Color(0xFFff6f2d), Color(0xFF4a90e2)]),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode, color: Colors.white, size: 20),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              'Theme Mode',
+              style: TextStyle(
+                fontSize: 16,
+                color: AppTheme.getTextColor(isDarkMode),
+                fontWeight: FontWeight.w500,
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  'Theme Mode',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppTheme.getTextColor(themeProvider.isDarkMode),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-              Switch(
-                value: themeProvider.isDarkMode,
-                onChanged: (value) => themeProvider.toggleTheme(),
-                activeColor: const Color(0xFFff6f2d),
-              ),
-            ],
+            ),
           ),
-        );
-      },
+          Switch(
+            value: isDarkMode,
+            onChanged: (value) => ref.read(themeProvider.notifier).toggleTheme(),
+            activeColor: const Color(0xFFff6f2d),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildMenuItem(IconData icon, String title, VoidCallback onTap) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return GestureDetector(
-          onTap: onTap,
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppTheme.getCardColor(themeProvider.isDarkMode),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppTheme.getBorderColor(themeProvider.isDarkMode)),
+    final isDarkMode = ref.watch(themeProvider);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppTheme.getCardColor(isDarkMode),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppTheme.getBorderColor(isDarkMode)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: [Color(0xFFff6f2d), Color(0xFF4a90e2)]),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: Colors.white, size: 20),
             ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [Color(0xFFff6f2d), Color(0xFF4a90e2)]),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(icon, color: Colors.white, size: 20),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppTheme.getTextColor(isDarkMode),
+                  fontWeight: FontWeight.w500,
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: AppTheme.getTextColor(themeProvider.isDarkMode),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios,
-                  color: AppTheme.getSubtextColor(themeProvider.isDarkMode),
-                  size: 16,
-                ),
-              ],
+              ),
             ),
-          ),
-        );
-      },
+            Icon(
+              Icons.arrow_forward_ios,
+              color: AppTheme.getSubtextColor(isDarkMode),
+              size: 16,
+            ),
+          ],
+        ),
+      ),
     );
   }
 

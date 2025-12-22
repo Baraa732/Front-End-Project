@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/core.dart';
+import '../../../core/state/state.dart';
 import '../../../core/network/connection_manager.dart';
 import '../../../core/extensions/theme_extensions.dart';
-import '../../theme_provider.dart';
 import '../../widgets/common/app_background.dart';
 import '../../widgets/common/theme_toggle_button.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _notificationsEnabled = true;
 
   @override
@@ -119,52 +120,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildThemeToggleTile() {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: context.cardDecoration,
-          child: Row(
-            children: [
-              Icon(
-                themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                color: const Color(0xFFff6f2d),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Dark Mode',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: context.textColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Use dark theme throughout the app',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: context.subtitleColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Switch(
-                value: themeProvider.isDarkMode,
-                onChanged: (value) => themeProvider.toggleTheme(),
-                activeColor: const Color(0xFFff6f2d),
-                activeTrackColor: const Color(0xFFff6f2d).withOpacity(0.3),
-              ),
-            ],
+    final isDarkMode = ref.watch(themeProvider);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: context.cardDecoration,
+      child: Row(
+        children: [
+          Icon(
+            isDarkMode ? Icons.dark_mode : Icons.light_mode,
+            color: const Color(0xFFff6f2d),
           ),
-        );
-      },
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Dark Mode',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: context.textColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Use dark theme throughout the app',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: context.subtitleColor,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: isDarkMode,
+            onChanged: (value) => ref.read(themeProvider.notifier).toggleTheme(),
+            activeColor: const Color(0xFFff6f2d),
+            activeTrackColor: const Color(0xFFff6f2d).withOpacity(0.3),
+          ),
+        ],
+      ),
     );
   }
 

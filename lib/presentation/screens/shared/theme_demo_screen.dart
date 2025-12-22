@@ -1,22 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../theme_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/core.dart';
+import '../../../core/state/state.dart';
 import '../../widgets/common/app_background.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_input.dart';
 import '../../widgets/common/theme_toggle_button.dart';
 import '../../widgets/common/themed_card.dart';
-import '../../../core/extensions/theme_extensions.dart';
-import '../../../core/theme/app_theme.dart';
 
-class ThemeDemoScreen extends StatefulWidget {
+class ThemeDemoScreen extends ConsumerStatefulWidget {
   const ThemeDemoScreen({super.key});
 
   @override
-  State<ThemeDemoScreen> createState() => _ThemeDemoScreenState();
+  ConsumerState<ThemeDemoScreen> createState() => _ThemeDemoScreenState();
 }
 
-class _ThemeDemoScreenState extends State<ThemeDemoScreen> {
+class _ThemeDemoScreenState extends ConsumerState<ThemeDemoScreen> {
   final TextEditingController _textController = TextEditingController();
 
   @override

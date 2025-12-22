@@ -1,25 +1,38 @@
 import 'package:flutter/material.dart';
-import '../theme/app_theme.dart';
 
 class ThemeHelper {
-  static BoxDecoration getBackgroundDecoration(bool isDark) {
-    return BoxDecoration(
-      gradient: AppTheme.getBackgroundGradient(isDark),
-    );
+  static const Color primaryBlue = Color(0xFF4a90e2);
+  static const Color primaryPink = Color(0xFFff6f2d);
+  static const Color primaryOrange = Color(0xFFff6f2d);
+  static const Color primaryGreen = Color(0xFF10B981);
+
+  static Color getTextColor(bool isDark) {
+    return isDark ? Colors.white : Colors.black87;
   }
-  
-  static BoxDecoration getCardDecoration(bool isDark) {
-    return BoxDecoration(
-      color: AppTheme.getCardColor(isDark),
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: AppTheme.getBorderColor(isDark)),
-      boxShadow: [
-        BoxShadow(
-          color: isDark ? Colors.black.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
-          blurRadius: 10,
-          offset: const Offset(0, 5),
-        ),
-      ],
-    );
+
+  static Color getSubtextColor(bool isDark) {
+    return isDark ? Colors.white70 : Colors.black54;
+  }
+
+  static Color getCardColor(bool isDark) {
+    return isDark ? Colors.white.withOpacity(0.1) : Colors.white;
+  }
+
+  static Color getBorderColor(bool isDark) {
+    return isDark ? Colors.white.withOpacity(0.2) : Colors.grey.withOpacity(0.3);
+  }
+
+  static LinearGradient getBackgroundGradient(bool isDark) {
+    return isDark
+        ? const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF0e1330), Color(0xFF17173a)],
+          )
+        : const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFF8F9FA), Color(0xFFE9ECEF)],
+          );
   }
 }

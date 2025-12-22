@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/core.dart';
 import '../../../presentation/widgets/common/animated_input_field.dart';
+import '../shared/main_navigation_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -79,7 +80,12 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       setState(() => _isLoading = false);
 
       if (result['success'] == true) {
-        Navigator.pushReplacementNamed(context, '/home');
+        // Navigate to main screen
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+          (route) => false,
+        );
       } else {
         _showError(result['message'] ?? 'Login failed');
       }

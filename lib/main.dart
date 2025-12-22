@@ -1,55 +1,55 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import 'presentation/theme_provider.dart';
-import 'core/theme/app_theme.dart';
-import 'core/constants/app_routes.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'core/di/injection.dart';
+import 'core/core.dart';
+import 'core/state/state.dart';
+import 'presentation/screens/auth/welcome_screen.dart';
+import 'presentation/screens/shared/main_navigation_screen.dart';
+import 'presentation/providers/auth_provider.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MyApp());
+  
+  await Hive.initFlutter();
+  await configureDependencies();
+  
+  runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => ThemeProvider(),
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, child) {
-          return MaterialApp(
-            title: 'AUTOHIVE',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-            initialRoute: AppRoutes.welcome,
-            routes: AppRoutes.routes,
-            onGenerateRoute: AppRoutes.onGenerateRoute,
-            builder: (context, child) {
-              // Ensure system UI overlay style matches theme
-              return AnnotatedRegion(
-                value: themeProvider.isDarkMode 
-                    ? const SystemUiOverlayStyle(
-                        statusBarColor: Colors.transparent,
-                        statusBarIconBrightness: Brightness.light,
-                        systemNavigationBarColor: Color(0xFF0F0F23),
-                        systemNavigationBarIconBrightness: Brightness.light,
-                      )
-                    : const SystemUiOverlayStyle(
-                        statusBarColor: Colors.transparent,
-                        statusBarIconBrightness: Brightness.dark,
-                        systemNavigationBarColor: Color(0xFFF8FAFC),
-                        systemNavigationBarIconBrightness: Brightness.dark,
-                      ),
-                child: child!,
-              );
-            },
-          );
-        },
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDarkMode = ref.watch(themeProvider);
+    final isAuthenticated = ref.watch(authProvider.select((auth) => auth.isAuthenticated));
+    
+    return MaterialApp(
+      title: 'AUTOHIVE',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      home: isAuthenticated ? const MainNavigationScreen() : const WelcomeScreen(),
+      builder: (context, child) {
+        return AnnotatedRegion(
+          value: isDarkMode 
+              ? const SystemUiOverlayStyle(
+                  statusBarColor: Colors.transparent,
+                  statusBarIconBrightness: Brightness.light,
+                  systemNavigationBarColor: Color(0xFF0F0F23),
+                  systemNavigationBarIconBrightness: Brightness.light,
+                )
+              : const SystemUiOverlayStyle(
+                  statusBarColor: Colors.transparent,
+                  statusBarIconBrightness: Brightness.dark,
+                  systemNavigationBarColor: Color(0xFFF8FAFC),
+                  systemNavigationBarIconBrightness: Brightness.dark,
+                ),
+          child: child!,
+        );
+      },
     );
   }
 }

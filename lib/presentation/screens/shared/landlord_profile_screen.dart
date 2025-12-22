@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/core.dart';
-import '../../theme_provider.dart';
+import '../../../core/state/state.dart';
 
-class LandlordProfileScreen extends StatefulWidget {
+class LandlordProfileScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic> landlord;
   
   const LandlordProfileScreen({super.key, required this.landlord});
 
   @override
-  State<LandlordProfileScreen> createState() => _LandlordProfileScreenState();
+  ConsumerState<LandlordProfileScreen> createState() => _LandlordProfileScreenState();
 }
 
-class _LandlordProfileScreenState extends State<LandlordProfileScreen> with TickerProviderStateMixin {
+class _LandlordProfileScreenState extends ConsumerState<LandlordProfileScreen> with TickerProviderStateMixin {
   late AnimationController _backgroundController;
   late Animation<double> _rotationAnimation;
 
@@ -32,40 +32,37 @@ class _LandlordProfileScreenState extends State<LandlordProfileScreen> with Tick
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return Scaffold(
-          body: Container(
-            decoration: BoxDecoration(
-              gradient: AppTheme.getBackgroundGradient(themeProvider.isDarkMode),
-            ),
-            child: Stack(
-              children: [
-                _buildAnimatedBackground(themeProvider.isDarkMode),
-                SafeArea(
-                  child: Column(
-                    children: [
-                      _buildHeader(),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            children: [
-                              _buildProfileCard(themeProvider.isDarkMode),
-                              const SizedBox(height: 20),
-                              _buildInfoCards(themeProvider.isDarkMode),
-                            ],
-                          ),
-                        ),
+    final isDarkMode = ref.watch(themeProvider);
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: AppTheme.getBackgroundGradient(isDarkMode),
+        ),
+        child: Stack(
+          children: [
+            _buildAnimatedBackground(isDarkMode),
+            SafeArea(
+              child: Column(
+                children: [
+                  _buildHeader(),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        children: [
+                          _buildProfileCard(isDarkMode),
+                          const SizedBox(height: 20),
+                          _buildInfoCards(isDarkMode),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 

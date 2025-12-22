@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/core.dart';
+import '../../../core/state/state.dart';
 import '../../../data/data.dart';
-import '../../theme_provider.dart';
 import '../../widgets/common/cached_network_image.dart';
 import '../tenant/create_booking_screen.dart';
 
-class ApartmentDetailsScreen extends StatefulWidget {
+class ApartmentDetailsScreen extends ConsumerStatefulWidget {
   final String apartmentId;
   const ApartmentDetailsScreen({super.key, required this.apartmentId});
 
   @override
-  State<ApartmentDetailsScreen> createState() => _ApartmentDetailsScreenState();
+  ConsumerState<ApartmentDetailsScreen> createState() => _ApartmentDetailsScreenState();
 }
 
-class _ApartmentDetailsScreenState extends State<ApartmentDetailsScreen> with TickerProviderStateMixin {
+class _ApartmentDetailsScreenState extends ConsumerState<ApartmentDetailsScreen>
+    with TickerProviderStateMixin {
   final ApiService _apiService = ApiService();
   final AuthService _authService = AuthService();
   Map<String, dynamic>? _apartment;
@@ -22,7 +23,7 @@ class _ApartmentDetailsScreenState extends State<ApartmentDetailsScreen> with Ti
   bool _isLoading = true;
   int _currentImageIndex = 0;
   bool _isFavorite = false;
-  
+
   late AnimationController _backgroundController;
   late Animation<double> _rotationAnimation;
 
@@ -33,13 +34,16 @@ class _ApartmentDetailsScreenState extends State<ApartmentDetailsScreen> with Ti
     _loadDetails();
     _loadUser();
   }
-  
+
   void _initAnimations() {
     _backgroundController = AnimationController(
       duration: const Duration(seconds: 20),
       vsync: this,
     )..repeat();
-    _rotationAnimation = Tween<double>(begin: 0, end: 1).animate(_backgroundController);
+    _rotationAnimation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(_backgroundController);
   }
 
   Future<void> _loadUser() async {
@@ -52,7 +56,7 @@ class _ApartmentDetailsScreenState extends State<ApartmentDetailsScreen> with Ti
   Future<void> _loadDetails() async {
     try {
       final result = await _apiService.getApartmentDetails(widget.apartmentId);
-      
+
       if (result['success'] == true && result['data'] != null) {
         setState(() {
           _apartment = result['data'];
@@ -61,7 +65,12 @@ class _ApartmentDetailsScreenState extends State<ApartmentDetailsScreen> with Ti
       } else {
         setState(() => _isLoading = false);
         if (mounted) {
-          ErrorHandler.showError(context, null, customMessage: result['message'] ?? 'Failed to load apartment details');
+          ErrorHandler.showError(
+            context,
+            null,
+            customMessage:
+                result['message'] ?? 'Failed to load apartment details',
+          );
         }
       }
     } catch (e) {
@@ -74,109 +83,151 @@ class _ApartmentDetailsScreenState extends State<ApartmentDetailsScreen> with Ti
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return Scaffold(
-          body: _isLoading
-              ? Container(
-                  decoration: BoxDecoration(gradient: AppTheme.getBackgroundGradient(themeProvider.isDarkMode)),
-                  child: const Center(child: CircularProgressIndicator(color: Color(0xFFff6f2d))),
-                )
-              : _apartment == null
-                  ? Container(
-                      decoration: BoxDecoration(gradient: AppTheme.getBackgroundGradient(themeProvider.isDarkMode)),
-                      child: const Center(child: Text('Apartment not found', style: TextStyle(color: Colors.white))),
-                    )
-                  : CustomScrollView(
-                      slivers: [
-                        SliverAppBar(
-                          expandedHeight: 300,
-                          pinned: true,
-                          backgroundColor: const Color(0xFF0e1330),
-                          flexibleSpace: FlexibleSpaceBar(
-                            background: Stack(
-                              children: [
-                                _buildAnimatedBackground(),
-                                _buildImageGallery(),
-                              ],
-                            ),
-                          ),
-                        ),
-                        SliverToBoxAdapter(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: AppTheme.getBackgroundGradient(themeProvider.isDarkMode),
-                            ),
-                            child: Stack(
-                              children: [
-                                _buildAnimatedBackground(),
-                                Padding(
-                                  padding: const EdgeInsets.all(20),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        _apartment!['title'] ?? 'Apartment',
-                                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Row(
-                                        children: [
-                                          const Icon(Icons.location_on, color: Color(0xFFff6f2d), size: 20),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            '${_apartment!['city'] ?? ''}, ${_apartment!['governorate'] ?? ''}',
-                                            style: TextStyle(color: Colors.white.withOpacity(0.7)),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        '\$${_apartment!['price_per_night'] ?? _apartment!['price'] ?? 0}/night',
-                                        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFFff6f2d)),
-                                      ),
-                                      const SizedBox(height: 24),
-                                      Row(
-                                        children: [
-                                          _buildInfoCard(Icons.bed, '${_apartment!['bedrooms'] ?? 0} Beds'),
-                                          const SizedBox(width: 12),
-                                          _buildInfoCard(Icons.bathtub, '${_apartment!['bathrooms'] ?? 0} Baths'),
-                                          const SizedBox(width: 12),
-                                          _buildInfoCard(Icons.square_foot, '${_apartment!['area'] ?? 0} m²'),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 24),
-                                      const Text('Description', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        _apartment!['description'] ?? 'No description available',
-                                        style: TextStyle(color: Colors.white.withOpacity(0.8), height: 1.5),
-                                      ),
-                                      const SizedBox(height: 32),
-                                      if (_currentUser?['role'] == 'tenant')
-                                        _buildBookingButton()
-                                      else if (_currentUser?['role'] == 'landlord')
-                                        _buildLandlordActions()
-                                      else
-                                        _buildLoginPrompt(),
-                                      const SizedBox(height: 20),
-                                    ],
-                                  ),
+    final isDarkMode = ref.watch(themeProvider);
+    return Scaffold(
+      body: _isLoading
+          ? Container(
+              decoration: BoxDecoration(
+                gradient: AppTheme.getBackgroundGradient(isDarkMode),
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(color: Color(0xFFff6f2d)),
+              ),
+            )
+          : _apartment == null
+          ? Container(
+              decoration: BoxDecoration(
+                gradient: AppTheme.getBackgroundGradient(isDarkMode),
+              ),
+              child: const Center(
+                child: Text(
+                  'Apartment not found',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            )
+          : CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  expandedHeight: 300,
+                  pinned: true,
+                  backgroundColor: const Color(0xFF0e1330),
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: Stack(
+                      children: [
+                        _buildAnimatedBackground(),
+                        _buildImageGallery(),
+                      ],
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: AppTheme.getBackgroundGradient(isDarkMode),
+                    ),
+                    child: Stack(
+                      children: [
+                        _buildAnimatedBackground(),
+                        Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _apartment!['title'] ?? 'Apartment',
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
                                 ),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.location_on,
+                                    color: Color(0xFFff6f2d),
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${_apartment!['city'] ?? ''}, ${_apartment!['governorate'] ?? ''}',
+                                    style: TextStyle(
+                                      color: Colors.white.withOpacity(0.7),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                '\$${_apartment!['price_per_night'] ?? _apartment!['price'] ?? 0}/night',
+                                style: const TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFff6f2d),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              Row(
+                                children: [
+                                  _buildInfoCard(
+                                    Icons.bed,
+                                    '${_apartment!['bedrooms'] ?? 0} Beds',
+                                  ),
+                                  const SizedBox(width: 12),
+                                  _buildInfoCard(
+                                    Icons.bathtub,
+                                    '${_apartment!['bathrooms'] ?? 0} Baths',
+                                  ),
+                                  const SizedBox(width: 12),
+                                  _buildInfoCard(
+                                    Icons.square_foot,
+                                    '${_apartment!['area'] ?? 0} m²',
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
+                              const Text(
+                                'Description',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _apartment!['description'] ??
+                                    'No description available',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  height: 1.5,
+                                ),
+                              ),
+                              const SizedBox(height: 32),
+                              if (_currentUser?['role'] == 'tenant')
+                                _buildBookingButton()
+                              else if (_currentUser?['role'] == 'landlord')
+                                _buildLandlordActions()
+                              else
+                                _buildLoginPrompt(),
+                              const SizedBox(height: 20),
+                            ],
                           ),
                         ),
                       ],
                     ),
-        );
-      },
+                  ),
+                ),
+              ],
+            ),
     );
   }
 
   Widget _buildImageGallery() {
     final images = List<String>.from(_apartment!['images'] ?? []);
-    
+
     if (images.isEmpty) {
       return Container(
         color: Colors.grey,
@@ -199,7 +250,9 @@ class _ApartmentDetailsScreenState extends State<ApartmentDetailsScreen> with Ti
                 fit: BoxFit.cover,
                 placeholder: Container(
                   color: Colors.grey[300],
-                  child: const Center(child: CircularProgressIndicator(color: Color(0xFFff6f2d))),
+                  child: const Center(
+                    child: CircularProgressIndicator(color: Color(0xFFff6f2d)),
+                  ),
                 ),
                 errorWidget: Container(
                   color: Colors.grey,
@@ -209,7 +262,9 @@ class _ApartmentDetailsScreenState extends State<ApartmentDetailsScreen> with Ti
             }
             return Container(
               color: Colors.grey[300],
-              child: const Center(child: CircularProgressIndicator(color: Color(0xFFff6f2d))),
+              child: const Center(
+                child: CircularProgressIndicator(color: Color(0xFFff6f2d)),
+              ),
             );
           },
         );
@@ -240,11 +295,17 @@ class _ApartmentDetailsScreenState extends State<ApartmentDetailsScreen> with Ti
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFff6f2d),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         child: const Text(
           'Book Now',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
       ),
     );
@@ -260,11 +321,17 @@ class _ApartmentDetailsScreenState extends State<ApartmentDetailsScreen> with Ti
             onPressed: () {},
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF4a90e2),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
             ),
             child: const Text(
               'Manage Apartment',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ),
         ),
@@ -276,9 +343,14 @@ class _ApartmentDetailsScreenState extends State<ApartmentDetailsScreen> with Ti
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                child: const Text('View Bookings', style: TextStyle(color: Colors.white)),
+                child: const Text(
+                  'View Bookings',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -287,9 +359,14 @@ class _ApartmentDetailsScreenState extends State<ApartmentDetailsScreen> with Ti
                 onPressed: () {},
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFff6f2d),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
-                child: const Text('Edit Details', style: TextStyle(color: Colors.white)),
+                child: const Text(
+                  'Edit Details',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ),
           ],
@@ -312,7 +389,11 @@ class _ApartmentDetailsScreenState extends State<ApartmentDetailsScreen> with Ti
           const SizedBox(height: 8),
           const Text(
             'Login Required',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -391,13 +472,17 @@ class _ApartmentDetailsScreenState extends State<ApartmentDetailsScreen> with Ti
           children: [
             Icon(icon, color: const Color(0xFFff6f2d)),
             const SizedBox(height: 8),
-            Text(text, style: const TextStyle(color: Colors.white, fontSize: 12), textAlign: TextAlign.center),
+            Text(
+              text,
+              style: const TextStyle(color: Colors.white, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),
     );
   }
-  
+
   @override
   void dispose() {
     _backgroundController.dispose();

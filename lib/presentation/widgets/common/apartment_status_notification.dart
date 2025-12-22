@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../theme_provider.dart';
+import '../../../core/core.dart';
 import '../../../core/theme/app_theme.dart';
 
-class ApartmentStatusNotification extends StatelessWidget {
+class ApartmentStatusNotification extends ConsumerWidget {
   final String status;
   final String? rejectionReason;
-  
+
   const ApartmentStatusNotification({
     super.key,
     required this.status,
@@ -14,59 +13,56 @@ class ApartmentStatusNotification extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: _getStatusColor().withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _getStatusColor()),
-          ),
-          child: Row(
-            children: [
-              Icon(_getStatusIcon(), color: _getStatusColor(), size: 24),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _getStatusTitle(),
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: _getStatusColor(),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _getStatusMessage(),
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppTheme.getSubtextColor(themeProvider.isDarkMode),
-                      ),
-                    ),
-                    if (rejectionReason != null && rejectionReason!.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        'Reason: $rejectionReason',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.red.shade700,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
-                  ],
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDarkMode = ref.watch(themeProvider);
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _getStatusColor().withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _getStatusColor()),
+      ),
+      child: Row(
+        children: [
+          Icon(_getStatusIcon(), color: _getStatusColor(), size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _getStatusTitle(),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: _getStatusColor(),
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  _getStatusMessage(),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.getSubtextColor(isDarkMode),
+                  ),
+                ),
+                if (rejectionReason != null && rejectionReason!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Reason: $rejectionReason',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.red.shade700,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 

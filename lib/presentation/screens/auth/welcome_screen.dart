@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/core.dart';
 import '../../theme_provider.dart';
 import '../../widgets/common/theme_toggle_button.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
 
-class WelcomeScreen extends StatefulWidget {
+class WelcomeScreen extends ConsumerStatefulWidget {
   const WelcomeScreen({super.key});
 
   @override
-  State<WelcomeScreen> createState() => _WelcomeScreenState();
+  ConsumerState<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateMixin {
+class _WelcomeScreenState extends ConsumerState<WelcomeScreen> with TickerProviderStateMixin {
   late AnimationController _animationController;
   late AnimationController _backgroundController;
   late Animation<double> _fadeAnimation;
@@ -60,59 +60,57 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return Scaffold(
-          resizeToAvoidBottomInset: false,
-          body: Container(
-            decoration: BoxDecoration(
-              gradient: AppTheme.getBackgroundGradient(themeProvider.isDarkMode),
+    final isDarkMode = ref.watch(themeProvider);
+    
+    return Scaffold(
+      resizeToAvoidBottomInset: false,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: AppTheme.getBackgroundGradient(isDarkMode),
+        ),
+        child: Stack(
+          children: [
+            _buildAnimatedBackground(isDarkMode),
+            Positioned(
+              top: 50,
+              right: 20,
+              child: const ThemeToggleButton(),
             ),
-            child: Stack(
-              children: [
-                _buildAnimatedBackground(themeProvider.isDarkMode),
-                Positioned(
-                  top: 50,
-                  right: 20,
-                  child: const ThemeToggleButton(),
-                ),
-                SafeArea(
-                  child: AnimatedBuilder(
-                    animation: _fadeAnimation,
-                    builder: (context, child) {
-                      return FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: SlideTransition(
-                          position: _slideAnimation,
-                          child: Padding(
-                            padding: const EdgeInsets.all(24.0),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Spacer(),
-                                _buildLogo(),
-                                const SizedBox(height: 40),
-                                _buildTitle(),
-                                const SizedBox(height: 16),
-                                _buildSubtitle(themeProvider.isDarkMode),
-                                const Spacer(),
-                                _buildLoginButton(context),
-                                const SizedBox(height: 16),
-                                _buildRegisterButton(context, themeProvider.isDarkMode),
-                                const SizedBox(height: 40),
-                              ],
-                            ),
-                          ),
+            SafeArea(
+              child: AnimatedBuilder(
+                animation: _fadeAnimation,
+                builder: (context, child) {
+                  return FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Spacer(),
+                            _buildLogo(),
+                            const SizedBox(height: 40),
+                            _buildTitle(),
+                            const SizedBox(height: 16),
+                            _buildSubtitle(isDarkMode),
+                            const Spacer(),
+                            _buildLoginButton(context),
+                            const SizedBox(height: 16),
+                            _buildRegisterButton(context, isDarkMode),
+                            const SizedBox(height: 40),
+                          ],
                         ),
-                      );
-                    },
-                  ),
-                ),
-              ],
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 

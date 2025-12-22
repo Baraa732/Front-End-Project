@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/core.dart';
+import '../../../core/state/state.dart';
 import '../../../data/data.dart';
-import '../../theme_provider.dart';
 import '../../widgets/common/cached_network_image.dart';
 import '../../widgets/common/theme_toggle_button.dart';
 import 'apartment_details_screen.dart';
 import 'notifications_screen.dart';
 import 'landlord_profile_screen.dart';
 
-class ModernHomeScreen extends StatefulWidget {
+class ModernHomeScreen extends ConsumerStatefulWidget {
   const ModernHomeScreen({super.key});
 
   @override
-  State<ModernHomeScreen> createState() => _ModernHomeScreenState();
+  ConsumerState<ModernHomeScreen> createState() => _ModernHomeScreenState();
 }
 
-class _ModernHomeScreenState extends State<ModernHomeScreen>
+class _ModernHomeScreenState extends ConsumerState<ModernHomeScreen>
     with TickerProviderStateMixin {
   final ApiService _apiService = ApiService();
   final AuthService _authService = AuthService();
@@ -50,7 +50,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
     _loadData();
   }
 
-  void _initAnimations() {
+  void _initAnimations() {  
     _headerAnimationController = AnimationController(duration: const Duration(milliseconds: 1200), vsync: this);
     _cardAnimationController = AnimationController(duration: const Duration(milliseconds: 800), vsync: this);
     _filterAnimationController = AnimationController(duration: const Duration(milliseconds: 300), vsync: this);
@@ -140,29 +140,26 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return Scaffold(
-          body: Container(
-            decoration: BoxDecoration(
-              gradient: AppTheme.getBackgroundGradient(themeProvider.isDarkMode),
+    final isDarkMode = ref.watch(themeProvider);
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: AppTheme.getBackgroundGradient(isDarkMode),
+        ),
+        child: Stack(
+          children: [
+            _buildAnimatedBackground(),
+            SafeArea(
+              child: Column(
+                children: [
+                  _buildUnifiedHeader(),
+                  Expanded(child: _buildApartmentsList()),
+                ],
+              ),
             ),
-            child: Stack(
-              children: [
-                _buildAnimatedBackground(),
-                SafeArea(
-                  child: Column(
-                    children: [
-                      _buildUnifiedHeader(),
-                      Expanded(child: _buildApartmentsList()),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 
@@ -178,10 +175,10 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
               margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: AppTheme.getCardColor(context.watch<ThemeProvider>().isDarkMode),
+                color: AppTheme.getCardColor(ref.watch(themeProvider)),
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: AppTheme.getBorderColor(context.watch<ThemeProvider>().isDarkMode)),
-                boxShadow: [BoxShadow(color: context.watch<ThemeProvider>().isDarkMode ? Colors.black.withOpacity(0.1) : Colors.grey.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10))],
+                border: Border.all(color: AppTheme.getBorderColor(ref.watch(themeProvider))),
+                boxShadow: [BoxShadow(color: ref.watch(themeProvider) ? Colors.black.withOpacity(0.1) : Colors.grey.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10))],
               ),
               child: Column(
                 children: [
@@ -196,14 +193,15 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
                         child: const Text('AUTOHIVE', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white)),
                       ),
                       const Spacer(),
-                      Consumer<ThemeProvider>(
-                        builder: (context, themeProvider, child) {
+                      Consumer(
+                        builder: (context, ref, child) {
+                          final isDarkMode = ref.watch(themeProvider);
                           return Text(
                             '${_filteredApartments.length}',
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: AppTheme.getTextColor(themeProvider.isDarkMode),
+                              color: AppTheme.getTextColor(isDarkMode),
                             ),
                           );
                         },
@@ -228,16 +226,16 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
   Widget _buildAdvancedSearchBar() {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context.watch<ThemeProvider>().isDarkMode),
+        color: AppTheme.getCardColor(ref.watch(themeProvider)),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.getBorderColor(context.watch<ThemeProvider>().isDarkMode)),
+        border: Border.all(color: AppTheme.getBorderColor(ref.watch(themeProvider))),
       ),
       child: TextField(
         controller: _searchController,
-        style: TextStyle(color: AppTheme.getTextColor(context.watch<ThemeProvider>().isDarkMode), fontSize: 16),
+        style: TextStyle(color: AppTheme.getTextColor(ref.watch(themeProvider)), fontSize: 16),
         decoration: InputDecoration(
           hintText: 'Search apartments...',
-          hintStyle: TextStyle(color: AppTheme.getSubtextColor(context.watch<ThemeProvider>().isDarkMode)),
+          hintStyle: TextStyle(color: AppTheme.getSubtextColor(ref.watch(themeProvider))),
           prefixIcon: const Icon(Icons.search, color: Color(0xFFff6f2d)),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -261,16 +259,16 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context.watch<ThemeProvider>().isDarkMode),
+        color: AppTheme.getCardColor(ref.watch(themeProvider)),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.getBorderColor(context.watch<ThemeProvider>().isDarkMode)),
+        border: Border.all(color: AppTheme.getBorderColor(ref.watch(themeProvider))),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
           isExpanded: true,
-          dropdownColor: const Color(0xFF17173a),
-          style: TextStyle(color: AppTheme.getTextColor(context.watch<ThemeProvider>().isDarkMode), fontSize: 12),
+          dropdownColor: AppTheme.getCardColor(ref.watch(themeProvider)),
+          style: TextStyle(color: AppTheme.getTextColor(ref.watch(themeProvider)), fontSize: 12),
           items: options.map((option) => DropdownMenuItem(value: option, child: Text(option, style: const TextStyle(fontSize: 12)))).toList(),
           onChanged: onChanged,
         ),
@@ -283,7 +281,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
       return const Center(child: CircularProgressIndicator(color: Color(0xFFff6f2d)));
     }
     if (_filteredApartments.isEmpty) {
-      return Center(child: Text('No apartments found', style: TextStyle(color: AppTheme.getTextColor(context.watch<ThemeProvider>().isDarkMode))));
+      return Center(child: Text('No apartments found', style: TextStyle(color: AppTheme.getTextColor(ref.watch(themeProvider)))));
     }
     return ListView.builder(
       controller: _scrollController,
@@ -297,9 +295,9 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: AppTheme.getCardColor(context.watch<ThemeProvider>().isDarkMode),
+        color: AppTheme.getCardColor(ref.watch(themeProvider)),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.getBorderColor(context.watch<ThemeProvider>().isDarkMode)),
+        border: Border.all(color: AppTheme.getBorderColor(ref.watch(themeProvider))),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 4))],
       ),
       child: Column(
@@ -319,7 +317,7 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.getTextColor(context.watch<ThemeProvider>().isDarkMode),
+                          color: AppTheme.getTextColor(ref.watch(themeProvider)),
                         ),
                       ),
                     ),
@@ -333,21 +331,21 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
                     const SizedBox(width: 4),
                     Text(
                       '${apartment.city}, ${apartment.governorate}',
-                      style: TextStyle(color: AppTheme.getSubtextColor(context.watch<ThemeProvider>().isDarkMode)),
+                      style: TextStyle(color: AppTheme.getSubtextColor(ref.watch(themeProvider))),
                     ),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.bed, size: 16, color: AppTheme.getSubtextColor(context.watch<ThemeProvider>().isDarkMode)),
-                    Text(' ${apartment.bedrooms}', style: TextStyle(color: AppTheme.getSubtextColor(context.watch<ThemeProvider>().isDarkMode))),
+                    Icon(Icons.bed, size: 16, color: AppTheme.getSubtextColor(ref.watch(themeProvider))),
+                    Text(' ${apartment.bedrooms}', style: TextStyle(color: AppTheme.getSubtextColor(ref.watch(themeProvider)))),
                     const SizedBox(width: 16),
-                    Icon(Icons.bathtub, size: 16, color: AppTheme.getSubtextColor(context.watch<ThemeProvider>().isDarkMode)),
-                    Text(' ${apartment.bathrooms}', style: TextStyle(color: AppTheme.getSubtextColor(context.watch<ThemeProvider>().isDarkMode))),
+                    Icon(Icons.bathtub, size: 16, color: AppTheme.getSubtextColor(ref.watch(themeProvider))),
+                    Text(' ${apartment.bathrooms}', style: TextStyle(color: AppTheme.getSubtextColor(ref.watch(themeProvider)))),
                     const SizedBox(width: 16),
-                    Icon(Icons.square_foot, size: 16, color: AppTheme.getSubtextColor(context.watch<ThemeProvider>().isDarkMode)),
-                    Text(' ${apartment.area}m²', style: TextStyle(color: AppTheme.getSubtextColor(context.watch<ThemeProvider>().isDarkMode))),
+                    Icon(Icons.square_foot, size: 16, color: AppTheme.getSubtextColor(ref.watch(themeProvider))),
+                    Text(' ${apartment.area}m²', style: TextStyle(color: AppTheme.getSubtextColor(ref.watch(themeProvider)))),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -376,57 +374,54 @@ class _ModernHomeScreenState extends State<ModernHomeScreen>
   }
 
   Widget _buildAnimatedBackground() {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return AnimatedBuilder(
-          animation: _rotationAnimation,
-          builder: (context, child) {
-            return Stack(
-              children: [
-                Positioned(
-                  right: -50,
-                  top: 100,
-                  child: Transform.rotate(
-                    angle: _rotationAnimation.value * 2 * 3.14159,
-                    child: Container(
-                      width: 150,
-                      height: 150,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            const Color(0xFFff6f2d).withOpacity(themeProvider.isDarkMode ? 0.3 : 0.1),
-                            const Color(0xFF4a90e2).withOpacity(themeProvider.isDarkMode ? 0.2 : 0.05),
-                            Colors.transparent,
-                          ],
-                        ),
-                      ),
+    final isDarkMode = ref.watch(themeProvider);
+    return AnimatedBuilder(
+      animation: _rotationAnimation,
+      builder: (context, child) {
+        return Stack(
+          children: [
+            Positioned(
+              right: -50,
+              top: 100,
+              child: Transform.rotate(
+                angle: _rotationAnimation.value * 2 * 3.14159,
+                child: Container(
+                  width: 150,
+                  height: 150,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFFff6f2d).withOpacity(isDarkMode ? 0.3 : 0.1),
+                        const Color(0xFF4a90e2).withOpacity(isDarkMode ? 0.2 : 0.05),
+                        Colors.transparent,
+                      ],
                     ),
                   ),
                 ),
-                Positioned(
-                  left: -20,
-                  top: 300,
-                  child: Transform.rotate(
-                    angle: -_rotationAnimation.value * 1.5 * 3.14159,
-                    child: Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(25),
-                        gradient: LinearGradient(
-                          colors: [
-                            const Color(0xFF4a90e2).withOpacity(themeProvider.isDarkMode ? 0.4 : 0.1),
-                            const Color(0xFFff6f2d).withOpacity(themeProvider.isDarkMode ? 0.3 : 0.08),
-                          ],
-                        ),
-                      ),
+              ),
+            ),
+            Positioned(
+              left: -20,
+              top: 300,
+              child: Transform.rotate(
+                angle: -_rotationAnimation.value * 1.5 * 3.14159,
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(25),
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF4a90e2).withOpacity(isDarkMode ? 0.4 : 0.1),
+                        const Color(0xFFff6f2d).withOpacity(isDarkMode ? 0.3 : 0.08),
+                      ],
                     ),
                   ),
                 ),
-              ],
-            );
-          },
+              ),
+            ),
+          ],
         );
       },
     );

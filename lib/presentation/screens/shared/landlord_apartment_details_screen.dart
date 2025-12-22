@@ -1,20 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../theme_provider.dart';
-import '../../../core/theme/app_theme.dart';
-import '../../../core/network/api_service.dart';
-import '../../../core/constants/app_config.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/core.dart';
+import '../../../core/state/state.dart';
 import '../../widgets/common/cached_network_image.dart';
 
-class LandlordApartmentDetailsScreen extends StatefulWidget {
+class LandlordApartmentDetailsScreen extends ConsumerStatefulWidget {
   final String apartmentId;
   const LandlordApartmentDetailsScreen({super.key, required this.apartmentId});
 
   @override
-  State<LandlordApartmentDetailsScreen> createState() => _LandlordApartmentDetailsScreenState();
+  ConsumerState<LandlordApartmentDetailsScreen> createState() => _LandlordApartmentDetailsScreenState();
 }
 
-class _LandlordApartmentDetailsScreenState extends State<LandlordApartmentDetailsScreen> with TickerProviderStateMixin {
+class _LandlordApartmentDetailsScreenState extends ConsumerState<LandlordApartmentDetailsScreen> with TickerProviderStateMixin {
   final ApiService _apiService = ApiService();
   Map<String, dynamic>? _apartment;
   List<Map<String, dynamic>> _bookings = [];
@@ -70,32 +68,61 @@ class _LandlordApartmentDetailsScreenState extends State<LandlordApartmentDetail
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
-        return Scaffold(
-          body: _isLoading
+    final isDarkMode = ref.watch(themeProvider);
+    return Scaffold(
+      body: _isLoading
+          ? Container(
+              decoration: BoxDecoration(gradient: AppTheme.getBackgroundGradient(isDarkMode)),
+              child: const Center(child: CircularProgressIndicator(color: Color(0xFFff6f2d))),
+            )
+          : _apartment == null
               ? Container(
-                  decoration: BoxDecoration(gradient: AppTheme.getBackgroundGradient(themeProvider.isDarkMode)),
-                  child: const Center(child: CircularProgressIndicator(color: Color(0xFFff6f2d))),
+                  decoration: BoxDecoration(gradient: AppTheme.getBackgroundGradient(isDarkMode)),
+                  child: SafeArea(
+                    child: Column(
+                      children: [
+                        _buildHeader(),
+                        const Expanded(
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.error_outline, size: 80, color: Colors.white54),
+                                SizedBox(height: 16),
+                                Text('Apartment not found', style: TextStyle(color: Colors.white, fontSize: 18)),
+                                SizedBox(height: 8),
+                                Text('This apartment may have been deleted or you don\'t have access to it.', 
+                                     style: TextStyle(color: Colors.white54), textAlign: TextAlign.center),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 )
-              : _apartment == null
-                  ? Container(
-                      decoration: BoxDecoration(gradient: AppTheme.getBackgroundGradient(themeProvider.isDarkMode)),
-                      child: SafeArea(
+              : Container(
+                  decoration: BoxDecoration(gradient: AppTheme.getBackgroundGradient(isDarkMode)),
+                  child: Stack(
+                    children: [
+                      _buildAnimatedBackground(),
+                      SafeArea(
                         child: Column(
                           children: [
                             _buildHeader(),
-                            const Expanded(
-                              child: Center(
+                            Expanded(
+                              child: SingleChildScrollView(
+                                padding: const EdgeInsets.all(20),
                                 child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Icon(Icons.error_outline, size: 80, color: Colors.white54),
-                                    SizedBox(height: 16),
-                                    Text('Apartment not found', style: TextStyle(color: Colors.white, fontSize: 18)),
-                                    SizedBox(height: 8),
-                                    Text('This apartment may have been deleted or you don\'t have access to it.', 
-                                         style: TextStyle(color: Colors.white54), textAlign: TextAlign.center),
+                                    _buildApartmentInfo(),
+                                    const SizedBox(height: 24),
+                                    _buildImageGallery(),
+                                    const SizedBox(height: 24),
+                                    _buildStatsCards(),
+                                    const SizedBox(height: 24),
+                                    _buildManagementActions(),
                                   ],
                                 ),
                               ),
@@ -103,41 +130,9 @@ class _LandlordApartmentDetailsScreenState extends State<LandlordApartmentDetail
                           ],
                         ),
                       ),
-                    )
-                  : Container(
-                      decoration: BoxDecoration(gradient: AppTheme.getBackgroundGradient(themeProvider.isDarkMode)),
-                      child: Stack(
-                        children: [
-                          _buildAnimatedBackground(),
-                          SafeArea(
-                            child: Column(
-                              children: [
-                                _buildHeader(),
-                                Expanded(
-                                  child: SingleChildScrollView(
-                                    padding: const EdgeInsets.all(20),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        _buildApartmentInfo(),
-                                        const SizedBox(height: 24),
-                                        _buildImageGallery(),
-                                        const SizedBox(height: 24),
-                                        _buildStatsCards(),
-                                        const SizedBox(height: 24),
-                                        _buildManagementActions(),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-        );
-      },
+                    ],
+                  ),
+                ),
     );
   }
 

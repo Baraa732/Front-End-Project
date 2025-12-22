@@ -140,16 +140,46 @@ class _AnimatedBottomNavState extends State<AnimatedBottomNav>
                                       : Colors.transparent,
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 200),
-                                    child: Icon(
-                                      isActive ? item.activeIcon : item.icon,
-                                      key: ValueKey(isActive),
-                                      color: isActive 
-                                        ? const Color(0xFFff6f2d)
-                                        : Colors.white.withOpacity(0.6),
-                                      size: 24,
-                                    ),
+                                  child: Stack(
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      AnimatedSwitcher(
+                                        duration: const Duration(milliseconds: 200),
+                                        child: Icon(
+                                          isActive ? item.activeIcon : item.icon,
+                                          key: ValueKey(isActive),
+                                          color: isActive 
+                                            ? const Color(0xFFff6f2d)
+                                            : Colors.white.withOpacity(0.6),
+                                          size: 24,
+                                        ),
+                                      ),
+                                      if (item.badge != null)
+                                        Positioned(
+                                          right: -6,
+                                          top: -6,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: const BoxDecoration(
+                                              color: Color(0xFFff6f2d),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            constraints: const BoxConstraints(
+                                              minWidth: 16,
+                                              minHeight: 16,
+                                            ),
+                                            child: Text(
+                                              item.badge!,
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -185,10 +215,12 @@ class BottomNavItem {
   final IconData icon;
   final IconData activeIcon;
   final String label;
+  final String? badge;
 
   const BottomNavItem({
     required this.icon,
     required this.activeIcon,
     required this.label,
+    this.badge,
   });
 }
